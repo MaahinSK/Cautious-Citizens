@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cautious Citizens</title>
+    <title>About Us - Cautious Citizens</title>
     <link rel="stylesheet" href="style.css">
     <!-- Add these to all HTML files -->
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
@@ -16,7 +16,7 @@
     <header class="header">
         <div class="logo">Cautious citizens</div>
         <nav class="nav-links">
-            <a href="#" id="adminLink">Admin</a>
+            <a href="admin.html">Admin</a>
             <a href="about-us.html">About Us</a>
             <a href="benefits.html">Benefits</a>
         </nav>
@@ -24,19 +24,15 @@
     </header>
 
     <main class="main-content">
-        <div class="hero-section">
-            <h1>Be more Cautious</h1>
-            <img src="assets/raasta bondho.PNG" alt="Cautious citizens illustration" class="hero-image">
-        </div>
+        <h1>About Us</h1>
+        <p>Learn more about our mission and team.</p>
     </main>
-
-    <script src="script.js"></script>
-
     <script>
     document.getElementById('adminLink').addEventListener('click', (e) => {
         e.preventDefault();
         showLoginModal(true);
     });
 </script>
+
 </body>
 </html>
