@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Community Chat | Cautious Citizens</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+  <style>
+    .chat-container {
+      max-width: 1000px;
+      margin: 40px auto;
+      padding: 20px;
+      background-color: rgba(255, 255, 255, 0.9);
+      border-radius: 10px;
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.2);
+      display: flex;
+      flex-direction: column;
+      height: 70vh;
+    }
+
+    .chat-header {
+      text-align: center;
+      margin-bottom: 20px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid #eee;
+    }
+
+    .messages-container {
+      flex: 1;
+      overflow-y: auto;
+      padding: 10px;
+      margin-bottom: 20px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      background-color: #f9f9f9;
+    }
+
+    .message {
+      margin-bottom: 15px;
+      padding: 10px;
+      border-radius: 5px;
+      background-color: white;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+
+    .message-header {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 5px;
+      font-size: 0.9em;
+      color: #555;
+    }
+
+    .message-sender {
+      font-weight: bold;
+      color: #333;
+    }
+
+    .message-time {
+      color: #999;
+    }
+
+    .message-content {
+      word-wrap: break-word;
+    }
+
+    .input-area {
+      display: flex;
+      gap: 10px;
+    }
+
+    #messageInput {
+      flex: 1;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      resize: none;
+    }
+
+    #sendMessage {
+      padding: 10px 20px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+
+    #sendMessage:hover {
+      background-color: #45a049;
+    }
+
+    .typing-indicator {
+      color: #666;
+      font-style: italic;
+      margin-top: 5px;
+      height: 20px;
+    }
+  </style>
+</head>
+<body>
+  <nav class="navbar">
+    <div class="left">
+      <h1 class="brand">Cautious Citizens</h1>
+    </div>
+    <div class="center">
+      <a href="#">Admin</a>
+      <a href="#">About Us</a>
+      <a href="chat.html">Chat Board</a>
+      <a href="profile.html">Profile</a>
+      <a href="#">Feed</a>
+    </div>
+    <div class="right" id="auth-buttons">
+      <button id="loginBtn">Login</button>
+      <button id="signupBtn">Sign Up</button>
+    </div>
+    <div class="right" id="user-info" style="display: none;">
+      <span id="username-display"></span>
+      <button id="logoutBtn">Logout</button>
+    </div>
+  </nav>
+
+  <div class="chat-container">
+    <div class="chat-header">
+      <h1>Community Chat Board</h1>
+      <p>Connect with other cautious citizens in real-time</p>
+    </div>
+
+    <div class="messages-container" id="messagesContainer">
+      <!-- Messages will appear here -->
+    </div>
+
+<div class="typing-indicator" id="typingIndicator"></div>
+
+    <div class="input-area">
+      <textarea id="messageInput" placeholder="Type your message here..." rows="3"></textarea>
+      <button id="sendMessage">Send</button>
+    </div>
+  </div>
+
+  <script src="firebase-config.js"></script>
+  <script>
+    // Auth state handling
+    auth.onAuthStateChanged((user) => {
+      if (user) {
+        document.getElementById("auth-buttons").style.display = "none";
+        document.getElementById("user-info").style.display = "flex";
+        db.collection("users").doc(user.uid).get().then(doc => {
+          const name = doc.exists && doc.data().name ? doc.data().name : user.email;
+          document.getElementById("username-display").innerText = name;
+          initializeChat(user);
+        }).catch(error => {
+          console.error("Error getting user data:", error);
+          initializeChat(user); // Initialize chat even if user data fails
+        });
+      } else {
+        window.location.href = "index.html";
+      }
+    });
+
+    function initializeChat(user) {
+      const messagesContainer = document.getElementById("messagesContainer");
+      const messageInput = document.getElementById("messageInput");
+      const sendButton = document.getElementById("sendMessage");
+      const typingIndicator = document.getElementById("typingIndicator");
+
+      // Reference to the messages collection
+      const messagesRef = db.collection("communityChat").orderBy("timestamp");
+
+      // Load existing messages
+      messagesRef.onSnapshot((snapshot) => {
+        messagesContainer.innerHTML = '';
+        snapshot.forEach((doc) => {
+          const message = doc.data();
+          displayMessage(message);
+        });
+        scrollToBottom();
+      }, (error) => {
+        console.error("Error loading messages:", error);
+        alert("Error loading messages. Please refresh the page.");
+      });
+
+      function displayMessage(message) {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = 'message';
+        
+        const messageHeader = document.createElement('div');
+        messageHeader.className = 'message-header';
+        
+        const senderSpan = document.createElement('span');
+        senderSpan.className = 'message-sender';
+        senderSpan.textContent = message.senderName || message.senderEmail || 'Anonymous';
+        
+        const timeSpan = document.createElement('span');
+        timeSpan.className = 'message-time';
+        if (message.timestamp && message.timestamp.toDate) {
+          timeSpan.textContent = new Date(message.timestamp.toDate()).toLocaleString();
+        } else {
+          timeSpan.textContent = 'Just now';
+        }
+        
+        messageHeader.appendChild(senderSpan);
+        messageHeader.appendChild(timeSpan);
+        
+        const contentDiv = document.createElement('div');
+        contentDiv.className = 'message-content';
+        contentDiv.textContent = message.text;
+        
+        messageDiv.appendChild(messageHeader);
+        messageDiv.appendChild(contentDiv);
+        
+        messagesContainer.appendChild(messageDiv);
+      }
+
+      function scrollToBottom() {
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+      }
+
+      async function sendMessage() {
+        const text = messageInput.value.trim();
+        if (text === '') return;
+
+        try {
+          // Get user data
+          const userDoc = await db.collection("users").doc(user.uid).get();
+          const userData = userDoc.exists ? userDoc.data() : {};
+          
+          // Add message to Firestore
+          await db.collection("communityChat").add({
+            text: text,
+            senderId: user.uid,
+            senderEmail: user.email,
+            senderName: userData.name || null,
+            timestamp: firebase.firestore.FieldValue.serverTimestamp()
+          });
+          
+          messageInput.value = '';
+          console.log("Message sent successfully");
+        } catch (error) {
+          console.error("Error sending message:", error);
+          alert("Error sending message. Please try again.");
+        }
+      }
+
+      // Event listeners
+      sendButton.addEventListener('click', sendMessage);
+      
+      messageInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault();
+          sendMessage();
+        }
+      });
+
+      // Typing indicator
+      let typingTimeout;
+      messageInput.addEventListener('input', () => {
+        typingIndicator.textContent = "Typing...";
+        clearTimeout(typingTimeout);
+        typingTimeout = setTimeout(() => {
+          typingIndicator.textContent = "";
+        }, 2000);
+      });
+
+      scrollToBottom();
+    }
+
+    document.getElementById("logoutBtn").addEventListener("click", () => {
+      auth.signOut().then(() => window.location.href = "index.html");
+    });
+  </script>
+</body>
+</html>
