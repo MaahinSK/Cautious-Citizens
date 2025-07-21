@@ -1,42 +1,64 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cautious Citizens</title>
-    <link rel="stylesheet" href="style.css">
-    <!-- Add these to all HTML files -->
-<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
-<script src="firebase-config.js"></script>
-<script src="auth.js"></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cautious Citizens</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 </head>
 <body>
-    <header class="header">
-        <div class="logo">Cautious citizens</div>
-        <nav class="nav-links">
-            <a href="#" id="adminLink">Admin</a>
-            <a href="about-us.html">About Us</a>
-            <a href="benefits.html">Benefits</a>
-        </nav>
-        <button class="login-btn">Log In</button>
-    </header>
+  <nav class="navbar">
+    <div class="left">
+      <h1 class="brand">Cautious Citizens</h1>
+    </div>
+    <div class="center">
+      <a href="#">Admin</a>
+      <a href="#">About Us</a>
+      <a href="#">Chat Board</a>
+      <a href="#">Profile</a>
+      <a href="#">Feed</a>
+    </div>
+    <div class="right" id="auth-buttons">
+      <button id="loginBtn">Login</button>
+      <button id="signupBtn">Sign Up</button>
+    </div>
+    <div class="right" id="user-info" style="display: none;">
+      <span id="username-display"></span>
+      <button id="logoutBtn">Logout</button>
+    </div>
+  </nav>
 
-    <main class="main-content">
-        <div class="hero-section">
-            <h1>Be more Cautious</h1>
-            <img src="assets/raasta bondho.PNG" alt="Cautious citizens illustration" class="hero-image">
-        </div>
-    </main>
+  <main class="main-content">
+    <div class="overlay">
+      <img src="main-image.jpg" alt="Main Image" class="main-img" />
+      <h2 class="main-text">Welcome to Cautious Citizens</h2>
+    </div>
+  </main>
 
-    <script src="script.js"></script>
+  <div id="loginModal" class="modal">
+    <div class="modal-content">
+      <span class="close" id="closeLogin">&times;</span>
+      <h2>Login</h2>
+      <input type="email" id="loginEmail" placeholder="Email" />
+      <input type="password" id="loginPassword" placeholder="Password" />
+      <button id="submitLogin">Login</button>
+    </div>
+  </div>
 
-    <script>
-    document.getElementById('adminLink').addEventListener('click', (e) => {
-        e.preventDefault();
-        showLoginModal(true);
-    });
-</script>
+  <div id="signupModal" class="modal">
+    <div class="modal-content">
+      <span class="close" id="closeSignup">&times;</span>
+      <h2>Sign Up</h2>
+      <input type="email" id="signupEmail" placeholder="Email" />
+      <input type="password" id="signupPassword" placeholder="Password" />
+      <button id="submitSignup">Sign Up</button>
+    </div>
+  </div>
+
+  <script src="firebase-config.js"></script>
+  <script src="app.js"></script>
 </body>
 </html>
