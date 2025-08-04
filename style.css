@@ -251,3 +251,67 @@ body.fade-out {
   transform: scale(1.05);
   cursor: pointer;
 }
+
+/* Comments section */
+.comments-section {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease;
+  margin-top: 10px;
+  background: #f5f5f5;
+  border-radius: 5px;
+  padding: 0 10px;
+}
+
+.comments-section.expanded {
+  max-height: 500px;
+  padding: 10px;
+}
+
+.comment {
+  padding: 8px;
+  margin: 5px 0;
+  background: white;
+  border-radius: 3px;
+}
+
+.comment-form {
+  display: flex;
+  margin-top: 10px;
+}
+
+.comment-input {
+  flex-grow: 1;
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 3px 0 0 3px;
+}
+
+.comment-submit {
+  padding: 8px 15px;
+  background: #366de4;
+  color: white;
+  border: none;
+  border-radius: 0 3px 3px 0;
+}
+
+/* Filter section */
+.filter-section {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.filter-section input, 
+.filter-section button {
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+/* Stats modal */
+#statsChart {
+  width: 100%;
+  max-height: 400px;
+}
