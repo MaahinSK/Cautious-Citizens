@@ -16,6 +16,54 @@ body {
   color: white;
   padding: 10px 20px;
   z-index: 1000;
+  position: relative;
+}
+
+
+.navbar .center {
+  position: relative;
+  display: flex;
+  gap: 15px;
+}
+
+.navbar .center a {
+  position: relative;
+  padding: 10px 0;
+  color: white;
+  text-decoration: none;
+  transition: color 0.3s;
+}
+
+/* Active page highlight */
+.navbar .center a.active {
+  color: #1dfff4; /* Match your accent color */
+}
+
+/* Animated underline */
+.navbar .center a::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 0;
+  height: 2px;
+  background-color: #1dfff4;
+  transition: width 0.3s ease;
+}
+
+.navbar .center a:hover::after,
+.navbar .center a.active::after {
+  width: 100%;
+}
+
+/* Logo hover effect */
+.navbar .left h1 {
+  cursor: pointer;
+  transition: transform 0.3s;
+}
+
+.navbar .left h1:hover {
+  transform: scale(1.05);
 }
 
 .navbar a, .navbar button {
@@ -171,4 +219,35 @@ body {
   .hero-section {
     max-width: 90%;
   }
+}
+
+/* Page transition */
+body {
+  opacity: 1;
+  transition: opacity 0.3s ease;
+}
+
+body.fade-out {
+  opacity: 0;
+}
+
+.navbar .left {
+  display: flex;
+  align-items: center;
+}
+
+.logo-link {
+  text-decoration: none;
+  color: white;
+  display: inline-block;
+}
+
+.navbar .left h1 {
+  margin: 0;
+  transition: transform 0.3s;
+}
+
+.navbar .left h1:hover {
+  transform: scale(1.05);
+  cursor: pointer;
 }

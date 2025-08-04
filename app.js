@@ -39,3 +39,24 @@ auth.onAuthStateChanged((user) => {
     });
   }
 });
+
+// Highlight active page and handle logo click
+document.addEventListener('DOMContentLoaded', function() {
+  // Get current page filename
+  const currentPage = window.location.pathname.split('/').pop() || 'index.html';
+  
+  // Highlight active link
+  document.querySelectorAll('.navbar .center a').forEach(link => {
+    const linkPage = link.getAttribute('href');
+    if ((linkPage === currentPage) || 
+        (currentPage === 'index.html' && linkPage === '#') || 
+        (linkPage === '#' && currentPage === 'index.html')) {
+      link.classList.add('active');
+    }
+  });
+
+  // Make logo clickable to return home
+  document.querySelector('.navbar .left h1').addEventListener('click', () => {
+    window.location.href = 'index.html';
+  });
+});
