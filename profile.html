@@ -316,12 +316,43 @@
     function loadNotifications(userId) {
       const container = document.getElementById('notificationsContainer');
       
+      // First try to get the user's notifications
+      db.collection('notifications')
+        .where('userId', '==', userId)
+        .orderBy('timestamp', 'desc')
+        .limit(20)
+        .get()
+        .then(snapshot => {
+          if (snapshot.empty) {
+            // If no notifications found in the new format, try the old format
+            tryOldNotificationFormat(userId);
+            return;
+          }
+          
+          container.innerHTML = '';
+          snapshot.forEach(doc => {
+            const notification = doc.data();
+            displayNotification(notification, doc.id);
+          });
+        })
+        .catch(error => {
+          console.error("Error loading notifications:", error);
+          // If error occurs, try the old format
+          tryOldNotificationFormat(userId);
+        });
+    }
+
+    function tryOldNotificationFormat(userId) {
+      const container = document.getElementById('notificationsContainer');
+      
+      // Try the old notification format (subcollection)
       db.collection('notifications')
         .doc(userId)
         .collection('alerts')
         .orderBy('timestamp', 'desc')
         .limit(20)
-        .onSnapshot(snapshot => {
+        .get()
+        .then(snapshot => {
           if (snapshot.empty) {
             container.innerHTML = '<div class="no-notifications">No notifications yet</div>';
             return;
@@ -332,9 +363,10 @@
             const notification = doc.data();
             displayNotification(notification, doc.id);
           });
-        }, error => {
-          console.error("Error loading notifications:", error);
-          container.innerHTML = '<div class="no-notifications">Error loading notifications</div>';
+        })
+        .catch(error => {
+          console.error("Error loading notifications from old format:", error);
+          container.innerHTML = '<div class="no-notifications">No notifications yet</div>';
         });
     }
 
@@ -344,46 +376,64 @@
       const notificationItem = document.createElement('div');
       notificationItem.className = `notification-item ${notification.read ? '' : 'unread'}`;
       notificationItem.dataset.notificationId = notificationId;
-      notificationItem.dataset.postId = notification.postId;
+      
+      // Handle both notification formats
+      const postId = notification.postId || (notification.post ? notification.post.id : null);
+      if (postId) {
+        notificationItem.dataset.postId = postId;
+      }
       
       const messageDiv = document.createElement('div');
       messageDiv.className = 'notification-message';
-      messageDiv.textContent = notification.message;
+      messageDiv.textContent = notification.message || 'New notification';
       
       const timeDiv = document.createElement('div');
       timeDiv.className = 'notification-time';
       if (notification.timestamp && notification.timestamp.toDate) {
         timeDiv.textContent = new Date(notification.timestamp.toDate()).toLocaleString();
       } else {
-        timeDiv.textContent = 'Just now';
+        timeDiv.textContent = 'Recently';
       }
       
       notificationItem.appendChild(messageDiv);
       notificationItem.appendChild(timeDiv);
       
-      // Handle click - mark as read and go to post
+      // Handle click - mark as read and go to post if available
       notificationItem.addEventListener('click', () => {
-        markNotificationAsRead(notificationId);
-        window.location.href = `feed.html#post-${notification.postId}`;
+        markNotificationAsRead(notificationId, notification.userId || auth.currentUser.uid);
+        if (postId) {
+          window.location.href = `feed.html#post-${postId}`;
+        }
       });
       
       container.appendChild(notificationItem);
     }
 
-    function markNotificationAsRead(notificationId) {
-      const userId = auth.currentUser.uid;
+    function markNotificationAsRead(notificationId, userId) {
+      // First try to update in the new format
       db.collection('notifications')
-        .doc(userId)
-        .collection('alerts')
         .doc(notificationId)
         .update({
           read: true
         })
+        .then(() => {
+          console.log("Notification marked as read");
+        })
         .catch(error => {
-          console.error("Error marking notification as read:", error);
+          console.error("Error marking notification as read in new format:", error);
+          // If that fails, try the old format
+          db.collection('notifications')
+            .doc(userId)
+            .collection('alerts')
+            .doc(notificationId)
+            .update({
+              read: true
+            })
+            .catch(error => {
+              console.error("Error marking notification as read in old format:", error);
+            });
         });
     }
-
     // Load achievements
     function loadAchievements(userId) {
       const container = document.getElementById('achievementsContainer');
