@@ -650,43 +650,22 @@ postCard.appendChild(reportBtn);
             });
           });
       }
-async function createCommentNotification(postId, commenterName, postAuthorId) {
+      async function createCommentNotification(postId, commenterName, postAuthorId) {
   try {
     // Don't create notification if the commenter is the post author
     const currentUser = auth.currentUser;
     if (currentUser.uid === postAuthorId) return;
     
-    // Create notification in user's subcollection (no index needed)
-    await db.collection("users")
-      .doc(postAuthorId)
-      .collection("notifications")
-      .add({
-        type: "comment",
-        message: `${commenterName} commented on your post`,
-        postId: postId,
-        read: false,
-        timestamp: firebase.firestore.FieldValue.serverTimestamp()
-      });
+    // Create notification
+    await db.collection("notifications").doc(postAuthorId).collection("alerts").add({
+      type: "comment",
+      message: `${commenterName} commented on your post`,
+      postId: postId,
+      read: false,
+      timestamp: firebase.firestore.FieldValue.serverTimestamp()
+    });
   } catch (error) {
     console.error("Error creating notification:", error);
-  }
-}
-    
-    // Fallback to old format if new format fails
-    try {
-      await db.collection("notifications")
-        .doc(postAuthorId)
-        .collection("alerts")
-        .add({
-          type: "comment",
-          message: `${commenterName} commented on your post`,
-          postId: postId,
-          read: false,
-          timestamp: firebase.firestore.FieldValue.serverTimestamp()
-        });
-    } catch (fallbackError) {
-      console.error("Error creating notification in fallback format:", fallbackError);
-    }
   }
 }
       async function addComment(postId, user, text) {

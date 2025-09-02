@@ -312,22 +312,16 @@
       });
     });
 
-    // Load notifications - simplified and fixed version
-    // Load notifications from user's subcollection (no index needed)
+    // Load notifications
     function loadNotifications(userId) {
       const container = document.getElementById('notificationsContainer');
       
-      // Show loading state
-      container.innerHTML = '<div class="no-notifications">Loading notifications...</div>';
-      
-      // Load from user's notifications subcollection
-      db.collection('users')
+      db.collection('notifications')
         .doc(userId)
-        .collection('notifications')
+        .collection('alerts')
         .orderBy('timestamp', 'desc')
         .limit(20)
-        .get()
-        .then(snapshot => {
+        .onSnapshot(snapshot => {
           if (snapshot.empty) {
             container.innerHTML = '<div class="no-notifications">No notifications yet</div>';
             return;
@@ -338,10 +332,9 @@
             const notification = doc.data();
             displayNotification(notification, doc.id);
           });
-        })
-        .catch(error => {
+        }, error => {
           console.error("Error loading notifications:", error);
-          container.innerHTML = '<div class="no-notifications">Error loading notifications. Please check console for details.</div>';
+          container.innerHTML = '<div class="no-notifications">Error loading notifications</div>';
         });
     }
 
@@ -351,59 +344,46 @@
       const notificationItem = document.createElement('div');
       notificationItem.className = `notification-item ${notification.read ? '' : 'unread'}`;
       notificationItem.dataset.notificationId = notificationId;
-      
-      // Handle post ID
-      const postId = notification.postId;
-      if (postId) {
-        notificationItem.dataset.postId = postId;
-      }
+      notificationItem.dataset.postId = notification.postId;
       
       const messageDiv = document.createElement('div');
       messageDiv.className = 'notification-message';
-      messageDiv.textContent = notification.message || 'New notification';
+      messageDiv.textContent = notification.message;
       
       const timeDiv = document.createElement('div');
       timeDiv.className = 'notification-time';
       if (notification.timestamp && notification.timestamp.toDate) {
         timeDiv.textContent = new Date(notification.timestamp.toDate()).toLocaleString();
       } else {
-        timeDiv.textContent = 'Recently';
+        timeDiv.textContent = 'Just now';
       }
       
       notificationItem.appendChild(messageDiv);
       notificationItem.appendChild(timeDiv);
       
-      // Handle click - mark as read and go to post if available
+      // Handle click - mark as read and go to post
       notificationItem.addEventListener('click', () => {
         markNotificationAsRead(notificationId);
-        if (postId) {
-          window.location.href = `feed.html#post-${postId}`;
-        }
+        window.location.href = `feed.html#post-${notification.postId}`;
       });
       
       container.appendChild(notificationItem);
     }
 
     function markNotificationAsRead(notificationId) {
+      const userId = auth.currentUser.uid;
       db.collection('notifications')
+        .doc(userId)
+        .collection('alerts')
         .doc(notificationId)
         .update({
           read: true
-        })
-        .then(() => {
-          console.log("Notification marked as read");
-          // Update UI
-          const notificationElement = document.querySelector(`[data-notification-id="${notificationId}"]`);
-          if (notificationElement) {
-            notificationElement.classList.remove('unread');
-            notificationElement.style.borderLeftColor = '#366de4';
-            notificationElement.style.backgroundColor = 'white';
-          }
         })
         .catch(error => {
           console.error("Error marking notification as read:", error);
         });
     }
+
     // Load achievements
     function loadAchievements(userId) {
       const container = document.getElementById('achievementsContainer');
