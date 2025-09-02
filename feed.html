@@ -656,17 +656,21 @@ async function createCommentNotification(postId, commenterName, postAuthorId) {
     const currentUser = auth.currentUser;
     if (currentUser.uid === postAuthorId) return;
     
-    // Create notification in the new format
-    await db.collection("notifications").add({
-      type: "comment",
-      message: `${commenterName} commented on your post`,
-      postId: postId,
-      userId: postAuthorId, // The user who should receive this notification
-      read: false,
-      timestamp: firebase.firestore.FieldValue.serverTimestamp()
-    });
+    // Create notification in user's subcollection (no index needed)
+    await db.collection("users")
+      .doc(postAuthorId)
+      .collection("notifications")
+      .add({
+        type: "comment",
+        message: `${commenterName} commented on your post`,
+        postId: postId,
+        read: false,
+        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+      });
   } catch (error) {
     console.error("Error creating notification:", error);
+  }
+}
     
     // Fallback to old format if new format fails
     try {
