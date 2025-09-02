@@ -1,9 +1,22 @@
-
 body {
   margin: 0;
   font-family: Arial, sans-serif;
-  background: url('background.jpg') no-repeat center center fixed;
+  min-height: 100vh;
+  position: relative;
+}
+
+/* Background with reduced opacity */
+body::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: url('assets/photo-1731351621470-8aebda14d242.avif') no-repeat center center;
   background-size: cover;
+  opacity: 0.7; /* Reduced opacity - adjust this value as needed */
+  z-index: -1;
 }
 
 .navbar {
@@ -18,7 +31,6 @@ body {
   z-index: 1000;
   position: relative;
 }
-
 
 .navbar .center {
   position: relative;
@@ -126,14 +138,6 @@ body {
 
 /* Add these to your existing style.css */
 
-body {
-  margin: 0;
-  font-family: Arial, sans-serif;
-  background: url('assets/photo-1731351621470-8aebda14d242.avif') no-repeat center center fixed;
-  background-size: cover;
-  min-height: 100vh;
-}
-
 .main-content {
   display: flex;
   justify-content: center;
@@ -187,8 +191,8 @@ body {
     color: rgb(252, 54, 54);
 }
 .feature-description{
-    font-size: 1.2rem;
-    color: #1dfff4;
+    font-size: 1.5rem;
+    color: #ffffff;
     margin-top: 10px;
     margin-bottom: 30px;
 }
@@ -208,7 +212,6 @@ body {
     border: none;
 
 }
-
 
 /* Responsive adjustments */
 @media (max-width: 768px) {
@@ -314,4 +317,13 @@ body.fade-out {
 #statsChart {
   width: 100%;
   max-height: 400px;
+}
+
+/* Ensure content is above the background */
+.navbar,
+.main-content,
+.teams,
+.modal {
+  position: relative;
+  z-index: 1;
 }

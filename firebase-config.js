@@ -10,3 +10,9 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
+
+// Admin configuration
+const adminEmails = [
+  "maahin810@gmail.com",  
+  "hello2@gmail.com"      
+];

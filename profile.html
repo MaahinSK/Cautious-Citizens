@@ -8,11 +8,10 @@
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
-  <script src="https://upload-widget.cloudinary.com/global/all.js" type="text/javascript"></script>
 
   <style>
     .profile-container {
-      max-width: 800px;
+      max-width: 1000px;
       margin: 40px auto;
       padding: 20px;
       background-color: rgba(255, 255, 255, 0.9);
@@ -25,10 +24,13 @@
       margin-bottom: 30px;
     }
 
-    .profile-form {
+    .profile-content {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 20px;
+      gap: 30px;
+    }
+
+    .profile-form {
       margin-bottom: 30px;
     }
 
@@ -49,10 +51,6 @@
       border-radius: 5px;
     }
 
-    .full-width {
-      grid-column: span 2;
-    }
-
     .save-btn {
       background-color: #366de4;
       color: white;
@@ -65,11 +63,59 @@
     }
 
     .save-btn:hover {
-      background-color: #45a049;
+      background-color: #2a56c7;
+    }
+
+    .notifications-section {
+      background-color: #f8f8f8;
+      border-radius: 8px;
+      padding: 15px;
+      max-height: 400px;
+      overflow-y: auto;
+    }
+
+    .notifications-title {
+      margin-top: 0;
+      padding-bottom: 10px;
+      border-bottom: 1px solid #ddd;
+    }
+
+    .notification-item {
+      padding: 10px;
+      margin-bottom: 10px;
+      background-color: white;
+      border-radius: 5px;
+      border-left: 4px solid #366de4;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+
+    .notification-item.unread {
+      border-left-color: #ff6b6b;
+      background-color: #fff5f5;
+    }
+
+    .notification-item:hover {
+      background-color: #f0f5ff;
+    }
+
+    .notification-message {
+      margin-bottom: 5px;
+    }
+
+    .notification-time {
+      font-size: 0.8em;
+      color: #888;
+    }
+
+    .no-notifications {
+      text-align: center;
+      color: #888;
+      padding: 20px;
     }
 
     .achievements-section {
-      margin-top: 40px;
+      grid-column: span 2;
     }
 
     .achievements-title {
@@ -89,10 +135,26 @@
       padding: 15px;
       text-align: center;
       box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-      min-height: 100px;
+      min-height: 120px;
       display: flex;
       flex-direction: column;
       justify-content: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .achievement-card.locked {
+      opacity: 0.7;
+    }
+
+    .achievement-card.locked::after {
+      content: '🔒';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 2em;
+      opacity: 0.3;
     }
 
     .achievement-card h3 {
@@ -102,24 +164,39 @@
 
     .achievement-card p {
       color: #666;
+      margin: 5px 0;
     }
 
-    .coming-soon {
-      font-style: italic;
-      color: #999;
+    .achievement-badge {
+      font-size: 2em;
+      margin-bottom: 10px;
+    }
+
+    .achievement-progress {
+      height: 5px;
+      background-color: #ddd;
+      border-radius: 5px;
+      margin-top: 10px;
+      overflow: hidden;
+    }
+
+    .achievement-progress-bar {
+      height: 100%;
+      background-color: #4CAF50;
+      border-radius: 5px;
     }
   </style>
 </head>
 <body>
   <nav class="navbar">
     <div class="left">
-  <a href="index.html" class="logo-link">
-    <h1 class="brand">Cautious Citizens</h1>
-  </a>
-</div>
+      <a href="index.html" class="logo-link">
+        <h1 class="brand">Cautious Citizens</h1>
+      </a>
+    </div>
     <div class="center">
-      <a href="#">Admin</a>
-      <a href="#">About Us</a>
+      <a href="admin.html">Admin</a>
+      <a href="about.html">About Us</a>
       <a href="chat.html">Chat Board</a>
       <a href="profile.html">Profile</a>
       <a href="feed.html">Feed</a>
@@ -137,48 +214,44 @@
   <div class="profile-container">
     <div class="profile-header">
       <h1>My Profile</h1>
-      <p>Manage your personal information and achievements</p>
+      <p>Manage your personal information, achievements, and notifications</p>
     </div>
 
-    <form id="profileForm" class="profile-form">
-      <div class="form-group">
-        <label for="name">Full Name</label>
-        <input type="text" id="name" placeholder="Enter your full name">
+    <div class="profile-content">
+      <div>
+        <form id="profileForm" class="profile-form">
+          <div class="form-group">
+            <label for="name">Full Name</label>
+            <input type="text" id="name" placeholder="Enter your full name">
+          </div>
+          
+          <div class="form-group">
+            <label for="phone">Phone Number</label>
+            <input type="tel" id="phone" placeholder="Enter your phone number">
+          </div>
+          
+          <div class="form-group">
+            <label for="address">Address</label>
+            <input type="text" id="address" placeholder="Enter your full address">
+          </div>
+          
+          <div class="form-group">
+            <button type="button" id="saveProfile" class="save-btn">Save Profile</button>
+          </div>
+        </form>
       </div>
-      
-      <div class="form-group">
-        <label for="phone">Phone Number</label>
-        <input type="tel" id="phone" placeholder="Enter your phone number">
-      </div>
-      
-      <div class="form-group full-width">
-        <label for="address">Address</label>
-        <input type="text" id="address" placeholder="Enter your full address">
-      </div>
-      
-      <div class="form-group full-width">
-        <button type="button" id="saveProfile" class="save-btn">Save Profile</button>
-      </div>
-    </form>
 
-    <div class="achievements-section">
-      <h2 class="achievements-title">My Achievements</h2>
-      <div class="achievements-grid">
-        <div class="achievement-card">
-          <h3>Community Helper</h3>
-          <p class="coming-soon">Coming soon</p>
+      <div class="notifications-section">
+        <h2 class="notifications-title">Notifications</h2>
+        <div id="notificationsContainer">
+          <div class="no-notifications">No notifications yet</div>
         </div>
-        <div class="achievement-card">
-          <h3>Safety Expert</h3>
-          <p class="coming-soon">Coming soon</p>
-        </div>
-        <div class="achievement-card">
-          <h3>First Responder</h3>
-          <p class="coming-soon">Coming soon</p>
-        </div>
-        <div class="achievement-card">
-          <h3>Neighborhood Watch</h3>
-          <p class="coming-soon">Coming soon</p>
+      </div>
+
+      <div class="achievements-section">
+        <h2 class="achievements-title">My Achievements</h2>
+        <div class="achievements-grid" id="achievementsContainer">
+          <!-- Achievements will be loaded here -->
         </div>
       </div>
     </div>
@@ -186,7 +259,7 @@
 
   <script src="firebase-config.js"></script>
   <script>
-    // Auth state handling (same as app.js)
+    // Auth state handling
     auth.onAuthStateChanged((user) => {
       if (user) {
         document.getElementById("auth-buttons").style.display = "none";
@@ -202,6 +275,10 @@
             if (data.phone) document.getElementById("phone").value = data.phone;
             if (data.address) document.getElementById("address").value = data.address;
           }
+          
+          // Load notifications and achievements
+          loadNotifications(user.uid);
+          loadAchievements(user.uid);
         });
       } else {
         // Redirect to home page if not logged in
@@ -222,7 +299,8 @@
         name,
         phone,
         address,
-        email: user.email // Keep email in document
+        email: user.email, // Keep email in document
+        lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
       }, { merge: true })
       .then(() => {
         alert("Profile saved successfully!");
@@ -234,10 +312,315 @@
       });
     });
 
-    // Modal and logout handlers (same as app.js)
+    // Load notifications
+    function loadNotifications(userId) {
+      const container = document.getElementById('notificationsContainer');
+      
+      db.collection('notifications')
+        .doc(userId)
+        .collection('alerts')
+        .orderBy('timestamp', 'desc')
+        .limit(20)
+        .onSnapshot(snapshot => {
+          if (snapshot.empty) {
+            container.innerHTML = '<div class="no-notifications">No notifications yet</div>';
+            return;
+          }
+          
+          container.innerHTML = '';
+          snapshot.forEach(doc => {
+            const notification = doc.data();
+            displayNotification(notification, doc.id);
+          });
+        }, error => {
+          console.error("Error loading notifications:", error);
+          container.innerHTML = '<div class="no-notifications">Error loading notifications</div>';
+        });
+    }
+
+    function displayNotification(notification, notificationId) {
+      const container = document.getElementById('notificationsContainer');
+      
+      const notificationItem = document.createElement('div');
+      notificationItem.className = `notification-item ${notification.read ? '' : 'unread'}`;
+      notificationItem.dataset.notificationId = notificationId;
+      notificationItem.dataset.postId = notification.postId;
+      
+      const messageDiv = document.createElement('div');
+      messageDiv.className = 'notification-message';
+      messageDiv.textContent = notification.message;
+      
+      const timeDiv = document.createElement('div');
+      timeDiv.className = 'notification-time';
+      if (notification.timestamp && notification.timestamp.toDate) {
+        timeDiv.textContent = new Date(notification.timestamp.toDate()).toLocaleString();
+      } else {
+        timeDiv.textContent = 'Just now';
+      }
+      
+      notificationItem.appendChild(messageDiv);
+      notificationItem.appendChild(timeDiv);
+      
+      // Handle click - mark as read and go to post
+      notificationItem.addEventListener('click', () => {
+        markNotificationAsRead(notificationId);
+        window.location.href = `feed.html#post-${notification.postId}`;
+      });
+      
+      container.appendChild(notificationItem);
+    }
+
+    function markNotificationAsRead(notificationId) {
+      const userId = auth.currentUser.uid;
+      db.collection('notifications')
+        .doc(userId)
+        .collection('alerts')
+        .doc(notificationId)
+        .update({
+          read: true
+        })
+        .catch(error => {
+          console.error("Error marking notification as read:", error);
+        });
+    }
+
+    // Load achievements
+    function loadAchievements(userId) {
+      const container = document.getElementById('achievementsContainer');
+      
+      // Define all achievements with their criteria
+      const achievements = [
+        {
+          id: 'first_post',
+          title: 'First Alert',
+          description: 'Create your first post',
+          badge: '🚨',
+          checkAchievement: checkFirstPostAchievement
+        },
+        {
+          id: 'community_helper',
+          title: 'Community Helper',
+          description: 'Helpful member with 10+ posts',
+          badge: '🤝',
+          checkAchievement: checkCommunityHelperAchievement
+        },
+        {
+          id: 'safety_expert',
+          title: 'Safety Expert',
+          description: 'Post about 5 different safety issues',
+          badge: '🛡️',
+          checkAchievement: checkSafetyExpertAchievement
+        },
+        {
+          id: 'first_responder',
+          title: 'First Responder',
+          description: 'Comment on 10 different posts',
+          badge: '⚡',
+          checkAchievement: checkFirstResponderAchievement
+        },
+        {
+          id: 'neighborhood_watch',
+          title: 'Neighborhood Watch',
+          description: 'Post alerts in 3 different locations',
+          badge: '👀',
+          checkAchievement: checkNeighborhoodWatchAchievement
+        },
+        {
+          id: 'verified_informer',
+          title: 'Verified Informer',
+          description: 'Get 5+ upvotes on your posts',
+          badge: '✅',
+          checkAchievement: checkVerifiedInformerAchievement
+        }
+      ];
+      
+      // Display all achievements
+      container.innerHTML = '';
+      achievements.forEach(achievement => {
+        const achievementCard = document.createElement('div');
+        achievementCard.className = 'achievement-card locked';
+        achievementCard.id = `achievement-${achievement.id}`;
+        
+        achievementCard.innerHTML = `
+          <div class="achievement-badge">${achievement.badge}</div>
+          <h3>${achievement.title}</h3>
+          <p>${achievement.description}</p>
+          <div class="achievement-progress">
+            <div class="achievement-progress-bar" style="width: 0%"></div>
+          </div>
+        `;
+        
+        container.appendChild(achievementCard);
+        
+        // Check if achievement is unlocked
+        achievement.checkAchievement(userId, achievement.id);
+      });
+    }
+
+    // Achievement check functions
+    function checkFirstPostAchievement(userId, achievementId) {
+      db.collection('communityFeed')
+        .where('authorId', '==', userId)
+        .get()
+        .then(snapshot => {
+          const card = document.getElementById(`achievement-${achievementId}`);
+          if (snapshot.size > 0) {
+            card.classList.remove('locked');
+            card.querySelector('.achievement-progress-bar').style.width = '100%';
+          } else {
+            card.querySelector('.achievement-progress-bar').style.width = '0%';
+          }
+        })
+        .catch(error => {
+          console.error("Error checking first post achievement:", error);
+        });
+    }
+
+    function checkCommunityHelperAchievement(userId, achievementId) {
+      db.collection('communityFeed')
+        .where('authorId', '==', userId)
+        .get()
+        .then(snapshot => {
+          const card = document.getElementById(`achievement-${achievementId}`);
+          const progress = Math.min((snapshot.size / 10) * 100, 100);
+          
+          card.querySelector('.achievement-progress-bar').style.width = `${progress}%`;
+          
+          if (snapshot.size >= 10) {
+            card.classList.remove('locked');
+          }
+        })
+        .catch(error => {
+          console.error("Error checking community helper achievement:", error);
+        });
+    }
+
+    function checkSafetyExpertAchievement(userId, achievementId) {
+      // This is a simplified version - in a real app, you'd track different safety categories
+      db.collection('communityFeed')
+        .where('authorId', '==', userId)
+        .get()
+        .then(snapshot => {
+          const card = document.getElementById(`achievement-${achievementId}`);
+          const progress = Math.min((snapshot.size / 5) * 100, 100);
+          
+          card.querySelector('.achievement-progress-bar').style.width = `${progress}%`;
+          
+          if (snapshot.size >= 5) {
+            card.classList.remove('locked');
+          }
+        })
+        .catch(error => {
+          console.error("Error checking safety expert achievement:", error);
+        });
+    }
+
+    function checkFirstResponderAchievement(userId, achievementId) {
+      // Count comments across all posts
+      let commentCount = 0;
+      
+      db.collection('communityFeed')
+        .get()
+        .then(postsSnapshot => {
+          const commentPromises = [];
+          
+          postsSnapshot.forEach(postDoc => {
+            const promise = db.collection('communityFeed')
+              .doc(postDoc.id)
+              .collection('comments')
+              .where('authorId', '==', userId)
+              .get()
+              .then(commentsSnapshot => {
+                commentCount += commentsSnapshot.size;
+              });
+              
+            commentPromises.push(promise);
+          });
+          
+          return Promise.all(commentPromises);
+        })
+        .then(() => {
+          const card = document.getElementById(`achievement-${achievementId}`);
+          const progress = Math.min((commentCount / 10) * 100, 100);
+          
+          card.querySelector('.achievement-progress-bar').style.width = `${progress}%`;
+          
+          if (commentCount >= 10) {
+            card.classList.remove('locked');
+          }
+        })
+        .catch(error => {
+          console.error("Error checking first responder achievement:", error);
+        });
+    }
+
+    function checkNeighborhoodWatchAchievement(userId, achievementId) {
+      // Get all posts and count unique locations
+      db.collection('communityFeed')
+        .where('authorId', '==', userId)
+        .get()
+        .then(snapshot => {
+          const locations = new Set();
+          
+          snapshot.forEach(doc => {
+            const post = doc.data();
+            if (post.location) {
+              locations.add(post.location);
+            }
+          });
+          
+          const card = document.getElementById(`achievement-${achievementId}`);
+          const progress = Math.min((locations.size / 3) * 100, 100);
+          
+          card.querySelector('.achievement-progress-bar').style.width = `${progress}%`;
+          
+          if (locations.size >= 3) {
+            card.classList.remove('locked');
+          }
+        })
+        .catch(error => {
+          console.error("Error checking neighborhood watch achievement:", error);
+        });
+    }
+
+    function checkVerifiedInformerAchievement(userId, achievementId) {
+      // Simplified version - in a real app, you'd implement upvoting
+      db.collection('communityFeed')
+        .where('authorId', '==', userId)
+        .get()
+        .then(snapshot => {
+          const card = document.getElementById(`achievement-${achievementId}`);
+          const progress = Math.min((snapshot.size / 5) * 100, 100);
+          
+          card.querySelector('.achievement-progress-bar').style.width = `${progress}%`;
+          
+          if (snapshot.size >= 5) {
+            card.classList.remove('locked');
+          }
+        })
+        .catch(error => {
+          console.error("Error checking verified informer achievement:", error);
+        });
+    }
+
+    // Modal and logout handlers
     document.getElementById("logoutBtn").addEventListener("click", () => {
       auth.signOut().then(() => window.location.href = "index.html");
     });
   </script>
+  <script>
+  // Highlight active page in navigation
+  document.addEventListener('DOMContentLoaded', function() {
+    const currentPage = window.location.pathname.split('/').pop();
+    const navLinks = document.querySelectorAll('.navbar .center a');
+    
+    navLinks.forEach(link => {
+      const linkPage = link.getAttribute('href');
+      if (linkPage === currentPage || (currentPage === '' && linkPage === 'index.html')) {
+        link.classList.add('active');
+      }
+    });
+  });
+</script>
 </body>
 </html>

@@ -112,8 +112,8 @@
   </a>
 </div>
     <div class="center">
-      <a href="#">Admin</a>
-      <a href="#">About Us</a>
+      <a href="admin.html">Admin</a>
+      <a href="about.html">About Us</a>
       <a href="chat.html">Chat Board</a>
       <a href="profile.html">Profile</a>
       <a href="feed.html">Feed</a>
@@ -277,5 +277,19 @@
       auth.signOut().then(() => window.location.href = "index.html");
     });
   </script>
+  <script>
+  // Highlight active page in navigation
+  document.addEventListener('DOMContentLoaded', function() {
+    const currentPage = window.location.pathname.split('/').pop();
+    const navLinks = document.querySelectorAll('.navbar .center a');
+    
+    navLinks.forEach(link => {
+      const linkPage = link.getAttribute('href');
+      if (linkPage === currentPage || (currentPage === '' && linkPage === 'index.html')) {
+        link.classList.add('active');
+      }
+    });
+  });
+</script>
 </body>
 </html>

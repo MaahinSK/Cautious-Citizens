@@ -262,8 +262,8 @@
       </a>
     </div>
     <div class="center">
-      <a href="#">Admin</a>
-      <a href="#">About Us</a>
+      <a href="admin.html">Admin</a>
+      <a href="about.html">About Us</a>
       <a href="chat.html">Chat Board</a>
       <a href="profile.html">Profile</a>
       <a href="feed.html">Feed</a>
@@ -347,6 +347,90 @@
         window.location.href = "index.html";
       }
     });
+     
+    function showReportDialog(postId) {
+  const reportReasons = [
+    "Inappropriate content",
+    "False information",
+    "Spam",
+    "Harassment",
+    "Other"
+  ];
+  
+  const modal = document.createElement('div');
+  modal.className = 'modal';
+  modal.style.display = 'block';
+  modal.innerHTML = `
+    <div class="modal-content" style="max-width: 500px;">
+      <span class="close" style="cursor: pointer; float: right; font-size: 24px;">&times;</span>
+      <h2>Report Post</h2>
+      <p>Please select a reason for reporting this post:</p>
+      <div id="reportReasons">
+        ${reportReasons.map(reason => `
+          <div>
+            <input type="radio" id="reason-${reason.replace(/\s+/g, '-')}" name="reportReason" value="${reason}">
+            <label for="reason-${reason.replace(/\s+/g, '-')}">${reason}</label>
+          </div>
+        `).join('')}
+      </div>
+      <div class="form-group" style="margin-top: 15px;">
+        <label for="additionalInfo">Additional Information (optional):</label>
+        <textarea id="additionalInfo" placeholder="Provide more details..." rows="3" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;"></textarea>
+      </div>
+      <button id="submitReport" class="submit-btn" style="margin-top: 15px;">Submit Report</button>
+    </div>
+  `;
+  
+  document.body.appendChild(modal);
+  
+  // Close modal
+  modal.querySelector('.close').addEventListener('click', () => {
+    document.body.removeChild(modal);
+  });
+  
+  // Close modal when clicking outside
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) {
+      document.body.removeChild(modal);
+    }
+  });
+  
+  // Submit report
+  modal.querySelector('#submitReport').addEventListener('click', () => {
+    const selectedReason = modal.querySelector('input[name="reportReason"]:checked');
+    const additionalInfo = modal.querySelector('#additionalInfo').value;
+    
+    if (!selectedReason) {
+      alert('Please select a reason for reporting this post.');
+      return;
+    }
+    
+    submitReport(postId, selectedReason.value, additionalInfo);
+    document.body.removeChild(modal);
+  });
+}
+
+async function submitReport(postId, reason, additionalInfo = '') {
+  try {
+    const user = auth.currentUser;
+    const userDoc = await db.collection('users').doc(user.uid).get();
+    const userData = userDoc.exists ? userDoc.data() : {};
+    
+    await db.collection('reports').add({
+      postId,
+      reason,
+      additionalInfo,
+      reporterId: user.uid,
+      reporterName: userData.name || user.email,
+      timestamp: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    
+    alert('Thank you for your report. Our team will review it shortly.');
+  } catch (error) {
+    console.error("Error submitting report:", error);
+    alert("Error submitting report. Please try again.");
+  }
+}
 
     function initializeFeed(user) {
       const uploadImageBtn = document.getElementById("uploadImageBtn");
@@ -499,6 +583,15 @@
         commentsBtn.addEventListener('click', toggleComments);
         postCard.appendChild(commentsBtn);
 
+        // Report button
+const reportBtn = document.createElement('button');
+reportBtn.className = 'comments-btn';
+reportBtn.innerHTML = '⚠️ Report';
+reportBtn.addEventListener('click', () => {
+  showReportDialog(docId);
+});
+postCard.appendChild(reportBtn);
+
         // Comments section
         const commentsSection = document.createElement('div');
         commentsSection.className = 'comments-section';
@@ -557,23 +650,49 @@
             });
           });
       }
-
+      async function createCommentNotification(postId, commenterName, postAuthorId) {
+  try {
+    // Don't create notification if the commenter is the post author
+    const currentUser = auth.currentUser;
+    if (currentUser.uid === postAuthorId) return;
+    
+    // Create notification
+    await db.collection("notifications").doc(postAuthorId).collection("alerts").add({
+      type: "comment",
+      message: `${commenterName} commented on your post`,
+      postId: postId,
+      read: false,
+      timestamp: firebase.firestore.FieldValue.serverTimestamp()
+    });
+  } catch (error) {
+    console.error("Error creating notification:", error);
+  }
+}
       async function addComment(postId, user, text) {
-        try {
-          const userDoc = await db.collection('users').doc(user.uid).get();
-          const userData = userDoc.exists ? userDoc.data() : {};
-          
-          await db.collection('communityFeed').doc(postId).collection('comments').add({
-            text,
-            authorId: user.uid,
-            authorName: userData.name || user.email,
-            timestamp: firebase.firestore.FieldValue.serverTimestamp()
-          });
-        } catch (error) {
-          console.error("Error adding comment:", error);
-          alert("Error adding comment. Please try again.");
-        }
-      }
+  try {
+    const userDoc = await db.collection('users').doc(user.uid).get();
+    const userData = userDoc.exists ? userDoc.data() : {};
+    
+    // Get the post to find the author
+    const postDoc = await db.collection('communityFeed').doc(postId).get();
+    const postData = postDoc.data();
+    
+    await db.collection('communityFeed').doc(postId).collection('comments').add({
+      text,
+      authorId: user.uid,
+      authorName: userData.name || user.email,
+      timestamp: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    
+    // Create notification for the post author
+    if (postData.authorId) {
+      createCommentNotification(postId, userData.name || user.email, postData.authorId);
+    }
+  } catch (error) {
+    console.error("Error adding comment:", error);
+    alert("Error adding comment. Please try again.");
+  }
+}
 
       // Filter posts
       applyFilterBtn.addEventListener('click', () => {
@@ -637,6 +756,39 @@
         auth.signOut().then(() => window.location.href = "index.html");
       });
     }
+    // Handle post highlighting from notifications
+window.addEventListener('load', function() {
+  const hash = window.location.hash;
+  if (hash && hash.startsWith('#post-')) {
+    const postId = hash.replace('#post-', '');
+    setTimeout(() => {
+      const postElement = document.querySelector(`[data-post-id="${postId}"]`);
+      if (postElement) {
+        postElement.scrollIntoView({ behavior: 'smooth' });
+        postElement.style.backgroundColor = '#fff9e6';
+        postElement.style.transition = 'background-color 2s';
+        
+        setTimeout(() => {
+          postElement.style.backgroundColor = '';
+        }, 2000);
+      }
+    }, 1000);
+  }
+});
   </script>
+  <script>
+  // Highlight active page in navigation
+  document.addEventListener('DOMContentLoaded', function() {
+    const currentPage = window.location.pathname.split('/').pop();
+    const navLinks = document.querySelectorAll('.navbar .center a');
+    
+    navLinks.forEach(link => {
+      const linkPage = link.getAttribute('href');
+      if (linkPage === currentPage || (currentPage === '' && linkPage === 'index.html')) {
+        link.classList.add('active');
+      }
+    });
+  });
+</script>
 </body>
 </html>

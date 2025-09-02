@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Panel | Cautious Citizens</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+  
+  <style>
+    .admin-container {
+      max-width: 1200px;
+      margin: 40px auto;
+      padding: 20px;
+      background-color: rgba(255, 255, 255, 0.9);
+      border-radius: 10px;
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.2);
+    }
+
+    .admin-header {
+      text-align: center;
+      margin-bottom: 30px;
+      padding-bottom: 15px;
+      border-bottom: 1px solid #eee;
+    }
+
+    .admin-section {
+      margin-bottom: 40px;
+    }
+
+    .section-title {
+      font-size: 1.5rem;
+      margin-bottom: 15px;
+      color: #333;
+      border-bottom: 1px solid #ddd;
+      padding-bottom: 5px;
+    }
+
+    .post-card, .report-card, .comment-card {
+      background-color: #f8f8f8;
+      border-radius: 8px;
+      padding: 15px;
+      margin-bottom: 15px;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    }
+
+    .post-header, .report-header, .comment-header {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 10px;
+      font-size: 0.9em;
+      color: #555;
+    }
+
+    .post-author, .report-reporter, .comment-author {
+      font-weight: bold;
+      color: #333;
+    }
+
+    .post-time, .report-time, .comment-time {
+      color: #999;
+    }
+
+    .post-location {
+      color: #666;
+      font-style: italic;
+      margin-bottom: 10px;
+    }
+
+    .post-description, .comment-text {
+      word-wrap: break-word;
+      margin-bottom: 10px;
+    }
+
+    .post-image {
+      width: 100%;
+      max-height: 300px;
+      object-fit: cover;
+      border-radius: 5px;
+      margin-bottom: 10px;
+    }
+
+    .report-reason {
+      margin: 10px 0;
+      padding: 10px;
+      background-color: #fff;
+      border-radius: 5px;
+      border-left: 4px solid #ff6b6b;
+    }
+
+    .admin-actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .delete-btn, .view-post-btn {
+      padding: 8px 15px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.9em;
+    }
+
+    .delete-btn {
+      background-color: #ff6b6b;
+      color: white;
+    }
+
+    .view-post-btn {
+      background-color: #4ecdc4;
+      color: white;
+    }
+
+    .no-content {
+      text-align: center;
+      color: #666;
+      padding: 20px;
+    }
+
+    .tab-container {
+      display: flex;
+      margin-bottom: 20px;
+      border-bottom: 1px solid #ddd;
+    }
+
+    .tab {
+      padding: 10px 20px;
+      cursor: pointer;
+      background: #f1f1f1;
+      border-radius: 5px 5px 0 0;
+      margin-right: 5px;
+    }
+
+    .tab.active {
+      background: #366de4;
+      color: white;
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 20px;
+      color: #666;
+    }
+  </style>
+</head>
+<body>
+  <nav class="navbar">
+    <div class="left">
+      <a href="index.html" class="logo-link">
+        <h1 class="brand">Cautious Citizens</h1>
+      </a>
+    </div>
+    <div class="center">
+      <a href="admin.html" class="active">Admin</a>
+      <a href="about.html">About Us</a>
+      <a href="chat.html">Chat Board</a>
+      <a href="profile.html">Profile</a>
+      <a href="feed.html">Feed</a>
+    </div>
+    <div class="right" id="auth-buttons">
+      <button id="loginBtn">Login</button>
+      <button id="signupBtn">Sign Up</button>
+    </div>
+    <div class="right" id="user-info" style="display: none;">
+      <span id="username-display"></span>
+      <button id="logoutBtn">Logout</button>
+    </div>
+  </nav>
+
+  <div class="admin-container">
+    <div class="admin-header">
+      <h1>Admin Panel</h1>
+      <p>Manage reported content and user posts</p>
+    </div>
+
+    <div class="tab-container">
+      <div class="tab active" data-tab="reports">Reported Content</div>
+      <div class="tab" data-tab="posts">All Posts</div>
+      <div class="tab" data-tab="comments">All Comments</div>
+    </div>
+
+    <div id="reportsTab" class="tab-content active">
+      <h2 class="section-title">Reported Posts</h2>
+      <div id="reportedPostsContainer">
+        <div class="loading">Loading reported posts...</div>
+      </div>
+    </div>
+
+    <div id="postsTab" class="tab-content">
+      <h2 class="section-title">All Community Posts</h2>
+      <div id="allPostsContainer">
+        <div class="loading">Loading all posts...</div>
+      </div>
+    </div>
+
+    <div id="commentsTab" class="tab-content">
+      <h2 class="section-title">All Comments</h2>
+      <div id="allCommentsContainer">
+        <div class="loading">Loading all comments...</div>
+      </div>
+    </div>
+  </div>
+
+  <script src="firebase-config.js"></script>
+  <script>
+    // Auth state handling with admin check
+    auth.onAuthStateChanged(async (user) => {
+      if (user) {
+        document.getElementById("auth-buttons").style.display = "none";
+        document.getElementById("user-info").style.display = "flex";
+        
+        // Check if user is admin
+        const isAdmin = adminEmails.includes(user.email);
+        
+        if (!isAdmin) {
+          // Redirect non-admin users
+          alert("You don't have permission to access the admin panel.");
+          window.location.href = "index.html";
+          return;
+        }
+        
+        db.collection("users").doc(user.uid).get().then(doc => {
+          const name = doc.exists && doc.data().name ? doc.data().name : user.email;
+          document.getElementById("username-display").innerText = name;
+          initializeAdminPanel(user);
+        });
+      } else {
+        window.location.href = "index.html";
+      }
+    });
+
+    function initializeAdminPanel(user) {
+      // Tab functionality
+      const tabs = document.querySelectorAll('.tab');
+      const tabContents = document.querySelectorAll('.tab-content');
+      
+      tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+          const tabId = tab.getAttribute('data-tab');
+          
+          // Update active tab
+          tabs.forEach(t => t.classList.remove('active'));
+          tab.classList.add('active');
+          
+          // Show correct content
+          tabContents.forEach(content => content.classList.remove('active'));
+          document.getElementById(`${tabId}Tab`).classList.add('active');
+          
+          // Load content based on tab
+          if (tabId === 'reports') {
+            loadReportedPosts();
+          } else if (tabId === 'posts') {
+            loadAllPosts();
+          } else if (tabId === 'comments') {
+            loadAllComments();
+          }
+        });
+      });
+      
+      // Load reported posts initially
+      loadReportedPosts();
+      
+      // Logout handler
+      document.getElementById("logoutBtn").addEventListener("click", () => {
+        auth.signOut().then(() => window.location.href = "index.html");
+      });
+    }
+
+    function loadReportedPosts() {
+      const container = document.getElementById('reportedPostsContainer');
+      container.innerHTML = '<div class="loading">Loading reported posts...</div>';
+      
+      db.collection('reports')
+        .orderBy('timestamp', 'desc')
+        .get()
+        .then(snapshot => {
+          if (snapshot.empty) {
+            container.innerHTML = '<div class="no-content">No reported posts found.</div>';
+            return;
+          }
+          
+          container.innerHTML = '';
+          const loadPromises = [];
+          
+          snapshot.forEach(reportDoc => {
+            const report = reportDoc.data();
+            const loadPromise = db.collection('communityFeed').doc(report.postId).get()
+              .then(postDoc => {
+                if (postDoc.exists) {
+                  const post = postDoc.data();
+                  displayReportedPost(post, report, reportDoc.id, postDoc.id);
+                }
+              })
+              .catch(error => {
+                console.error("Error loading reported post:", error);
+              });
+              
+            loadPromises.push(loadPromise);
+          });
+          
+          // Wait for all posts to load
+          Promise.all(loadPromises).then(() => {
+            if (container.children.length === 0) {
+              container.innerHTML = '<div class="no-content">No reported posts found.</div>';
+            }
+          });
+        })
+        .catch(error => {
+          console.error("Error loading reports:", error);
+          container.innerHTML = '<div class="no-content">Error loading reported posts.</div>';
+        });
+    }
+
+    function displayReportedPost(post, report, reportId, postId) {
+      const container = document.getElementById('reportedPostsContainer');
+      
+      const reportCard = document.createElement('div');
+      reportCard.className = 'report-card';
+      reportCard.dataset.postId = postId;
+      reportCard.dataset.reportId = reportId;
+      
+      const reportHeader = document.createElement('div');
+      reportHeader.className = 'report-header';
+      
+      const reporterSpan = document.createElement('span');
+      reporterSpan.className = 'report-reporter';
+      reporterSpan.textContent = `Reported by: ${report.reporterName || 'Anonymous'}`;
+      
+      const timeSpan = document.createElement('span');
+      timeSpan.className = 'report-time';
+      if (report.timestamp && report.timestamp.toDate) {
+        timeSpan.textContent = new Date(report.timestamp.toDate()).toLocaleString();
+      } else {
+        timeSpan.textContent = 'Recently';
+      }
+      
+      reportHeader.appendChild(reporterSpan);
+      reportHeader.appendChild(timeSpan);
+      reportCard.appendChild(reportHeader);
+      
+      const reasonDiv = document.createElement('div');
+      reasonDiv.className = 'report-reason';
+      reasonDiv.innerHTML = `<strong>Reason:</strong> ${report.reason}`;
+      
+      if (report.additionalInfo) {
+        reasonDiv.innerHTML += `<br><strong>Additional Info:</strong> ${report.additionalInfo}`;
+      }
+      
+      reportCard.appendChild(reasonDiv);
+      
+      const postHeader = document.createElement('div');
+      postHeader.className = 'post-header';
+      
+      const authorSpan = document.createElement('span');
+      authorSpan.className = 'post-author';
+      authorSpan.textContent = `Post by: ${post.authorName || 'Anonymous'}`;
+      
+      const postTimeSpan = document.createElement('span');
+      postTimeSpan.className = 'post-time';
+      if (post.timestamp && post.timestamp.toDate) {
+        postTimeSpan.textContent = new Date(post.timestamp.toDate()).toLocaleString();
+      } else {
+        postTimeSpan.textContent = 'Unknown time';
+      }
+      
+      postHeader.appendChild(authorSpan);
+      postHeader.appendChild(postTimeSpan);
+      reportCard.appendChild(postHeader);
+      
+      if (post.location) {
+        const locationDiv = document.createElement('div');
+        locationDiv.className = 'post-location';
+        locationDiv.textContent = `📍 ${post.location}`;
+        reportCard.appendChild(locationDiv);
+      }
+      
+      if (post.imageUrl) {
+        const img = document.createElement('img');
+        img.className = 'post-image';
+        img.src = post.imageUrl;
+        img.alt = 'Reported post image';
+        reportCard.appendChild(img);
+      }
+      
+      const descriptionDiv = document.createElement('div');
+      descriptionDiv.className = 'post-description';
+      descriptionDiv.textContent = post.description;
+      reportCard.appendChild(descriptionDiv);
+      
+      const actionsDiv = document.createElement('div');
+      actionsDiv.className = 'admin-actions';
+      
+      const deletePostBtn = document.createElement('button');
+      deletePostBtn.className = 'delete-btn';
+      deletePostBtn.textContent = 'Delete Post';
+      deletePostBtn.addEventListener('click', () => {
+        if (confirm('Are you sure you want to delete this post?')) {
+          deletePost(postId, reportId);
+        }
+      });
+      
+      const dismissReportBtn = document.createElement('button');
+      dismissReportBtn.className = 'view-post-btn';
+      dismissReportBtn.textContent = 'Dismiss Report';
+      dismissReportBtn.addEventListener('click', () => {
+        if (confirm('Are you sure you want to dismiss this report?')) {
+          dismissReport(reportId);
+        }
+      });
+      
+      actionsDiv.appendChild(deletePostBtn);
+      actionsDiv.appendChild(dismissReportBtn);
+      reportCard.appendChild(actionsDiv);
+      
+      container.appendChild(reportCard);
+    }
+
+    function loadAllPosts() {
+      const container = document.getElementById('allPostsContainer');
+      container.innerHTML = '<div class="loading">Loading all posts...</div>';
+      
+      db.collection('communityFeed')
+        .orderBy('timestamp', 'desc')
+        .get()
+        .then(snapshot => {
+          if (snapshot.empty) {
+            container.innerHTML = '<div class="no-content">No posts found.</div>';
+            return;
+          }
+          
+          container.innerHTML = '';
+          snapshot.forEach(doc => {
+            const post = doc.data();
+            displayPostForAdmin(post, doc.id);
+          });
+        })
+        .catch(error => {
+          console.error("Error loading posts:", error);
+          container.innerHTML = '<div class="no-content">Error loading posts.</div>';
+        });
+    }
+
+    function displayPostForAdmin(post, postId) {
+      const container = document.getElementById('allPostsContainer');
+      
+      const postCard = document.createElement('div');
+      postCard.className = 'post-card';
+      postCard.dataset.postId = postId;
+      
+      const postHeader = document.createElement('div');
+      postHeader.className = 'post-header';
+      
+      const authorSpan = document.createElement('span');
+      authorSpan.className = 'post-author';
+      authorSpan.textContent = post.authorName || 'Anonymous';
+      
+      const timeSpan = document.createElement('span');
+      timeSpan.className = 'post-time';
+      if (post.timestamp && post.timestamp.toDate) {
+        timeSpan.textContent = new Date(post.timestamp.toDate()).toLocaleString();
+      } else {
+        timeSpan.textContent = 'Unknown time';
+      }
+      
+      postHeader.appendChild(authorSpan);
+      postHeader.appendChild(timeSpan);
+      postCard.appendChild(postHeader);
+      
+      if (post.location) {
+        const locationDiv = document.createElement('div');
+        locationDiv.className = 'post-location';
+        locationDiv.textContent = `📍 ${post.location}`;
+        postCard.appendChild(locationDiv);
+      }
+      
+      if (post.imageUrl) {
+        const img = document.createElement('img');
+        img.className = 'post-image';
+        img.src = post.imageUrl;
+        img.alt = 'Post image';
+        postCard.appendChild(img);
+      }
+      
+      const descriptionDiv = document.createElement('div');
+      descriptionDiv.className = 'post-description';
+      descriptionDiv.textContent = post.description;
+      postCard.appendChild(descriptionDiv);
+      
+      // Add view comments button
+      const viewCommentsBtn = document.createElement('button');
+      viewCommentsBtn.className = 'view-post-btn';
+      viewCommentsBtn.textContent = 'View Comments';
+      viewCommentsBtn.addEventListener('click', () => {
+        viewPostComments(postId);
+      });
+      
+      const actionsDiv = document.createElement('div');
+      actionsDiv.className = 'admin-actions';
+      
+      const deletePostBtn = document.createElement('button');
+      deletePostBtn.className = 'delete-btn';
+      deletePostBtn.textContent = 'Delete Post';
+      deletePostBtn.addEventListener('click', () => {
+        if (confirm('Are you sure you want to delete this post?')) {
+          deletePost(postId);
+        }
+      });
+      
+      actionsDiv.appendChild(viewCommentsBtn);
+      actionsDiv.appendChild(deletePostBtn);
+      postCard.appendChild(actionsDiv);
+      
+      container.appendChild(postCard);
+    }
+
+    function loadAllComments() {
+      const container = document.getElementById('allCommentsContainer');
+      container.innerHTML = '<div class="loading">Loading all comments...</div>';
+      
+      // Get all posts first to access their comments
+      db.collection('communityFeed')
+        .get()
+        .then(postsSnapshot => {
+          if (postsSnapshot.empty) {
+            container.innerHTML = '<div class="no-content">No posts found, so no comments to display.</div>';
+            return;
+          }
+          
+          container.innerHTML = '';
+          const commentPromises = [];
+          
+          postsSnapshot.forEach(postDoc => {
+            const commentPromise = db.collection('communityFeed')
+              .doc(postDoc.id)
+              .collection('comments')
+              .orderBy('timestamp', 'desc')
+              .get()
+              .then(commentsSnapshot => {
+                if (!commentsSnapshot.empty) {
+                  commentsSnapshot.forEach(commentDoc => {
+                    const comment = commentDoc.data();
+                    displayCommentForAdmin(comment, commentDoc.id, postDoc.id);
+                  });
+                }
+              });
+              
+            commentPromises.push(commentPromise);
+          });
+          
+          // Wait for all comments to load
+          Promise.all(commentPromises).then(() => {
+            if (container.children.length === 0) {
+              container.innerHTML = '<div class="no-content">No comments found.</div>';
+            }
+          });
+        })
+        .catch(error => {
+          console.error("Error loading comments:", error);
+          container.innerHTML = '<div class="no-content">Error loading comments.</div>';
+        });
+    }
+
+    function displayCommentForAdmin(comment, commentId, postId) {
+      const container = document.getElementById('allCommentsContainer');
+      
+      const commentCard = document.createElement('div');
+      commentCard.className = 'comment-card';
+      commentCard.dataset.commentId = commentId;
+      commentCard.dataset.postId = postId;
+      
+      const commentHeader = document.createElement('div');
+      commentHeader.className = 'comment-header';
+      
+      const authorSpan = document.createElement('span');
+      authorSpan.className = 'comment-author';
+      authorSpan.textContent = comment.authorName || 'Anonymous';
+      
+      const timeSpan = document.createElement('span');
+      timeSpan.className = 'comment-time';
+      if (comment.timestamp && comment.timestamp.toDate) {
+        timeSpan.textContent = new Date(comment.timestamp.toDate()).toLocaleString();
+      } else {
+        timeSpan.textContent = 'Unknown time';
+      }
+      
+      commentHeader.appendChild(authorSpan);
+      commentHeader.appendChild(timeSpan);
+      commentCard.appendChild(commentHeader);
+      
+      const textDiv = document.createElement('div');
+      textDiv.className = 'comment-text';
+      textDiv.textContent = comment.text;
+      commentCard.appendChild(textDiv);
+      
+      const postReference = document.createElement('div');
+      postReference.className = 'post-location';
+      postReference.textContent = `From post: ${postId}`;
+      commentCard.appendChild(postReference);
+      
+      const actionsDiv = document.createElement('div');
+      actionsDiv.className = 'admin-actions';
+      
+      const deleteCommentBtn = document.createElement('button');
+      deleteCommentBtn.className = 'delete-btn';
+      deleteCommentBtn.textContent = 'Delete Comment';
+      deleteCommentBtn.addEventListener('click', () => {
+        if (confirm('Are you sure you want to delete this comment?')) {
+          deleteComment(postId, commentId);
+        }
+      });
+      
+      actionsDiv.appendChild(deleteCommentBtn);
+      commentCard.appendChild(actionsDiv);
+      
+      container.appendChild(commentCard);
+    }
+
+    function viewPostComments(postId) {
+      // Switch to comments tab and filter by this post
+      document.querySelector('[data-tab="comments"]').click();
+      
+      // We'll need to modify the loadAllComments function to filter by postId
+      // For now, we'll just alert the admin
+      alert(`Viewing comments for post: ${postId}. This feature will be implemented in the next update.`);
+    }
+
+    function deletePost(postId, reportId = null) {
+      // First delete all comments associated with this post
+      db.collection('communityFeed').doc(postId).collection('comments').get()
+        .then(commentsSnapshot => {
+          const deleteCommentPromises = [];
+          commentsSnapshot.forEach(commentDoc => {
+            deleteCommentPromises.push(commentDoc.ref.delete());
+          });
+          
+          return Promise.all(deleteCommentPromises);
+        })
+        .then(() => {
+          // Now delete the post
+          return db.collection('communityFeed').doc(postId).delete();
+        })
+        .then(() => {
+          console.log("Post and all associated comments deleted successfully");
+          
+          // If this was from a report, also delete the report
+          if (reportId) {
+            return db.collection('reports').doc(reportId).delete()
+              .then(() => {
+                console.log("Report also deleted");
+                // Remove the element from the DOM
+                const element = document.querySelector(`[data-post-id="${postId}"][data-report-id="${reportId}"]`);
+                if (element) {
+                  element.remove();
+                }
+              });
+          } else {
+            // Remove the element from the DOM
+            const element = document.querySelector(`[data-post-id="${postId}"]`);
+            if (element) {
+              element.remove();
+            }
+          }
+        })
+        .then(() => {
+          // Check if there are any posts left
+          const container = document.getElementById(reportId ? 'reportedPostsContainer' : 'allPostsContainer');
+          if (container.children.length === 0) {
+            container.innerHTML = '<div class="no-content">No ' + 
+              (reportId ? 'reported posts' : 'posts') + ' found.</div>';
+          }
+        })
+        .catch(error => {
+          console.error("Error deleting post:", error);
+          alert("Error deleting post. Please try again.");
+        });
+    }
+
+    function deleteComment(postId, commentId) {
+      db.collection('communityFeed').doc(postId).collection('comments').doc(commentId).delete()
+        .then(() => {
+          console.log("Comment deleted successfully");
+          
+          // Remove the element from the DOM
+          const element = document.querySelector(`[data-comment-id="${commentId}"]`);
+          if (element) {
+            element.remove();
+          }
+          
+          // Check if there are any comments left
+          const container = document.getElementById('allCommentsContainer');
+          if (container.children.length === 0) {
+            container.innerHTML = '<div class="no-content">No comments found.</div>';
+          }
+        })
+        .catch(error => {
+          console.error("Error deleting comment:", error);
+          alert("Error deleting comment. Please try again.");
+        });
+    }
+
+    function dismissReport(reportId) {
+      db.collection('reports').doc(reportId).delete()
+        .then(() => {
+          console.log("Report dismissed successfully");
+          
+          // Remove the element from the DOM
+          const element = document.querySelector(`[data-report-id="${reportId}"]`);
+          if (element) {
+            element.remove();
+          }
+          
+          // Check if there are any reports left
+          const container = document.getElementById('reportedPostsContainer');
+          if (container.children.length === 0) {
+            container.innerHTML = '<div class="no-content">No reported posts found.</div>';
+          }
+        })
+        .catch(error => {
+          console.error("Error dismissing report:", error);
+          alert("Error dismissing report. Please try again.");
+        });
+    }
+  </script>
+</body>
+</html>
